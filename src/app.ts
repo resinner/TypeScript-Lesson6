@@ -123,34 +123,89 @@
 //================================================================
 
 
-function AddTax(taxParsent: number) {
-    return function (_: any, _2: any, descriptor: PropertyDescriptor) {
-        const method = descriptor.value as Function;
+// function AddTax(taxParsent: number) {
+//     return function (_: any, _2: any, descriptor: PropertyDescriptor) {
+//         const method = descriptor.value as Function;
 
-        return {
-            configurable: true,
-            enumerable: false,
-            get() {
-                return (...args: any[]) => {
-                    const result = method.apply(this, args);
+//         return {
+//             configurable: true,
+//             enumerable: false,
+//             get() {
+//                 return (...args: any[]) => {
+//                     const result = method.apply(this, args);
                     
-                    return result + (result / 100 * taxParsent)
-                }
-            }
-        }
-    }
-}
+//                     return result + (result / 100 * taxParsent)
+//                 }
+//             }
+//         }
+//     }
+// }
 
-class Payment {
-  @AddTax(20)
-  pay(money: number) {
-    return money;
-  }
-}
+// class Payment {
+//   @AddTax(20)
+//   pay(money: number) {
+//     return money;
+//   }
+// }
 
-const payment = new Payment();
+// const payment = new Payment();
 
-console.log(payment.pay(100));
+// console.log(payment.pay(100));
 
 
 //================================================================
+
+
+function CheckEmail(target: any, nameMethod: string, position: number) {
+    if (!target[nameMethod].validation) {
+      target[nameMethod].validation = {};
+    }
+
+    Object.assign(target[nameMethod].validation, {
+        [position]: (value: string) => {
+            if (value.includes('@')) {
+                return value;
+            }
+
+            throw new Error('Not valid email address')
+        }
+    })
+}
+
+function Validation(_: any, _2: string, descriptor: PropertyDescriptor): PropertyDescriptor {
+  const method = descriptor.value;
+
+  return {
+    configurable: true,
+    enumerable: false,
+    get() {
+      return (...args: any[]) => {
+        if (method.validation) {
+          args.forEach((item, index) => {
+            if (method.validation[index]) {
+              args[index] = method.validation[index](item);
+            }
+          });
+        }
+
+        return method.apply(this, args);
+      };
+    },
+  };
+}
+
+class Person {
+  @Validation
+  setEmail(@CheckEmail email: string) {
+    console.log(email);
+  }
+}
+
+const person = new Person();
+
+person.setEmail('test@example.com');
+
+
+//================================================================
+
+
